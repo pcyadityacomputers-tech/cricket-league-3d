@@ -148,8 +148,18 @@ body {
 <script type="module">
 
 import * as THREE from
-"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+"https://unpkg.com/three@0.160.0/build/three.module.js";
 
+window.addEventListener("error", (event) => {
+  console.error(event.error || event.message);
+
+  const loading = document.getElementById("loading");
+
+  if (loading) {
+    loading.innerHTML =
+      "Game loading error. Please refresh the page.";
+  }
+});
 /* =========================
    BASIC THREE.JS SETUP
 ========================= */
