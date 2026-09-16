@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<title>Cricket Arena 3D</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  overflow: hidden;
+  background: #071b12;
+  font-family: Arial, sans-serif;
+  touch-action: none;
+}
+
+#game {
+  position: fixed;
+  inset: 0;
+}
+
+#hud {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  color: white;
+  background: rgba(0,0,0,.65);
+  padding: 10px 18px;
+  border-radius: 14px;
+  text-align: center;
+  min-width: 210px;
+}
+
+#title {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+#score {
+  margin-top: 5px;
+  font-size: 15px;
+}
+
+#message {
+  margin-top: 5px;
+  color: #ffd54a;
+  font-size: 13px;
+}
+
+#start {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+
+  border: none;
+  border-radius: 15px;
+  padding: 16px 32px;
+  font-size: 18px;
+  font-weight: bold;
+
+  background: #ffffff;
+  color: #111;
+  box-shadow: 0 6px 25px rgba(0,0,0,.4);
+}
+
+#controls {
+  position: fixed;
+  bottom: 25px;
+  left: 0;
+  right: 0;
+  z-index: 15;
+
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.shot {
+  border: 2px solid rgba(255,255,255,.7);
+  background: rgba(0,0,0,.65);
+  color: white;
+
+  width: 95px;
+  height: 55px;
+  border-radius: 14px;
+
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.shot:active {
+  transform: scale(.94);
+  background: rgba(255,255,255,.25);
+}
+
+#loading {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  background: #071b12;
+  font-size: 18px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="loading">Loading Cricket Arena 3D...</div>
+
+<div id="game"></div>
+
+<div id="hud">
+  <div id="title">CRICKET ARENA 3D</div>
+  <div id="score">
+    Runs: <span id="runs">0</span>
+    &nbsp;|&nbsp;
+    Wickets: <span id="wickets">0</span>
+    &nbsp;|&nbsp;
+    Balls: <span id="balls">0</span>
+  </div>
+  <div id="message">Press START MATCH</div>
+</div>
+
+<button id="start">START MATCH</button>
+
+<div id="controls">
+  <button class="shot" data-shot="defend">DEFEND</button>
+  <button class="shot" data-shot="drive">DRIVE</button>
+  <button class="shot" data-shot="loft">LOFT</button>
+</div>
+
+<script type="module">
+
+import * as THREE from
+"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+
+/* =========================
+   BASIC THREE.JS SETUP
+========================= */
+
+const scene = new THREE.Scene();
+
+scene.background = new THREE.Color(0x7fc8ff);
+
+const camera = new THREE.PerspectiveCamera(
+  55,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000
+);
+
+camera.position.set(0, 8, 15);
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true
+});
+
+renderer.setSize(
+  window.innerWidth,
+  window.innerHeight
+);
+
+renderer.setPixelRatio(
+  Math.min(window.devicePixelRatio, 2)
+);
+
+document.getElementById("game").appendChild(renderer.domElement);
+
+
+/* =========================
+   LIGHTING
+========================= */
+
+const ambient = new THREE.AmbientLight(
+  0xffffff,
+  2
+);
+
+scene.add(ambient);
+
+const sun = new THREE.DirectionalLight(
+  0xffffff,
+  3
+);
+
+sun.position.set(10, 20, 10);
+
+scene.add(sun);
+
+
+/* =========================
+   FIELD
+========================= */
+
+const fieldGeometry =
+  new THREE.CylinderGeometry(
+    28,
+    28,
+    0.25,
+    64
+  );
+
+const fieldMaterial =
+  new THREE.MeshStandardMaterial({
+    color: 0x247a35
+  });
+
+const field =
+  new THREE.Mesh(
+    fieldGeometry,
+    fieldMaterial
+  );
+
+field.position.y = -0.2;
+
+scene.add(field);
+
+
+/* =========================
+   PITCH
+========================= */
+
+const pitchGeometry =
+  new THREE.BoxGeometry(
+    3.2,
+    0.12,
+    20
+  );
+
+const pitchMaterial =
+  new THREE.MeshStandardMaterial({
+    color: 0xc9a66b
+  });
+
+const pitch =
+  new THREE.Mesh(
+    pitchGeometry,
+    pitchMaterial
+  );
+
+pitch.position.y = 0;
+
+scene.add(pitch);
+
+
+/* =========================
+   CREASES
+========================= */
+
+function createLine(
+  x,
+  z,
+  width,
+  depth
+) {
+
+  const geometry =
+    new THREE.BoxGeometry(
+      width,
+      0.03,
+      depth
+    );
+
+  const material =
+    new THREE.MeshBasicMaterial({
+      color: 0xffffff
+    });
+
+  const line =
+    new THREE.Mesh(
+      geometry,
+      material
+    );
+
+  line.position.set(
+    x,
+    0.08,
+    z
+  );
+
+  scene.add(line);
+}
+
+createLine(
+  0,
+  7.5,
+  3.2,
+  0.08
+);
+
+createLine(
+  0,
+  -7.5,
+  3.2,
+  0.08
+);
+
+
+/* =========================
+   STUMPS
+========================= */
+
+function createStumps(z) {
+
+  for (let x of [-0.35, 0, 0.35]) {
+
+    const geometry =
+      new THREE.CylinderGeometry(
+        0.055,
+        0.055,
+        1.2,
+        12
+      );
+
+    const material =
+      new THREE.MeshStandardMaterial({
+        color: 0xffffff
+      });
+
+    const stump =
+      new THREE.Mesh(
+        geometry,
+        material
+      );
+
+    stump.position.set(
+      x,
+      0.6,
+      z
+    );
+
+    scene.add(stump);
+  }
+}
+
+createStumps(8);
+createStumps(-8);
+
+
+/* =========================
+   SIMPLE PLAYER
+========================= */
+
+function createPlayer(
+  color,
+  z
+) {
+
+  const group =
+    new THREE.Group();
+
+  /* body */
+
+  const body =
+    new THREE.Mesh(
+      new THREE.CylinderGeometry(
+        0.45,
+        0.55,
+        1.5,
+        16
+      ),
+      new THREE.MeshStandardMaterial({
+        color: color
+      })
+    );
+
+  body.position.y = 1.35;
+
+  group.add(body);
+
+  /* head */
+
+  const head =
+    new THREE.Mesh(
+      new THREE.SphereGeometry(
+        0.38
