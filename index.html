@@ -644,3 +644,423 @@ function drawBatsman(){
     ctx.lineTo(
       x+45,
       y-50
+    );
+
+  }
+
+  ctx.stroke();
+
+}
+
+
+/* =================================
+   BOWLER
+================================= */
+
+function drawBowler(){
+
+  const x =
+  canvas.width/2;
+
+  const y =
+  canvas.height*.32;
+
+  drawPlayer(
+    x,
+    y,
+    .8,
+    "#dc2626"
+  );
+
+}
+
+
+/* =================================
+   BALL
+================================= */
+
+function drawBall(){
+
+  if(!ballMoving)
+    return;
+
+
+  ctx.fillStyle =
+  "#b91c1c";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    ballX,
+    ballY,
+    ballSize,
+    0,
+    Math.PI*2
+  );
+
+  ctx.fill();
+
+
+  /* white seam */
+
+  ctx.strokeStyle =
+  "white";
+
+  ctx.lineWidth = 2;
+
+  ctx.beginPath();
+
+  ctx.arc(
+    ballX,
+    ballY,
+    ballSize*.7,
+    0,
+    Math.PI*2
+  );
+
+  ctx.stroke();
+
+}
+
+
+/* =================================
+   DRAW EVERYTHING
+================================= */
+
+function draw(){
+
+  drawSky();
+
+  drawStadium();
+
+  drawField();
+
+  drawPitch();
+
+  drawBowler();
+
+  drawBatsman();
+
+  drawBall();
+
+}
+
+
+/* =================================
+   BOWL
+================================= */
+
+function bowl(){
+
+  if(!playing)
+    return;
+
+  ballMoving = true;
+
+  ballProgress = 0;
+
+  shot = null;
+
+  message.textContent =
+  "Ball coming! Choose a shot.";
+
+}
+
+
+/* =================================
+   SHOT
+================================= */
+
+function playShot(type){
+
+  if(!playing)
+    return;
+
+  if(!ballMoving)
+    return;
+
+  if(
+    ballProgress < .65
+  ){
+
+    message.textContent =
+    "Wait for the ball...";
+
+    return;
+
+  }
+
+
+  shot = type;
+
+  ballMoving = false;
+
+  balls++;
+
+
+  let result = 0;
+
+
+  if(type === "defend"){
+
+    result = 0;
+
+    message.textContent =
+    "DEFENDED!";
+
+  }
+
+
+  if(type === "drive"){
+
+    if(Math.random() < .65){
+
+      result = 4;
+
+      message.textContent =
+      "FOUR!";
+
+    }else{
+
+      result = 2;
+
+      message.textContent =
+      "GOOD DRIVE!";
+
+    }
+
+  }
+
+
+  if(type === "loft"){
+
+    if(Math.random() < .25){
+
+      wickets++;
+
+      message.textContent =
+      "OUT!";
+
+    }else{
+
+      if(Math.random() < .5){
+
+        result = 6;
+
+        message.textContent =
+        "SIX!";
+
+      }else{
+
+        result = 4;
+
+        message.textContent =
+        "FOUR!";
+
+      }
+
+    }
+
+  }
+
+
+  runs += result;
+
+  updateScore();
+
+
+  setTimeout(
+    nextBall,
+    1200
+  );
+
+}
+
+
+/* =================================
+   NEXT BALL
+================================= */
+
+function nextBall(){
+
+  if(
+    wickets >= 3 ||
+    balls >= 12
+  ){
+
+    playing = false;
+
+    message.textContent =
+    "INNINGS COMPLETE!";
+
+    start.style.display =
+    "block";
+
+    start.textContent =
+    "PLAY AGAIN";
+
+    return;
+
+  }
+
+
+  shot = null;
+
+  setTimeout(
+    bowl,
+    700
+  );
+
+}
+
+
+/* =================================
+   ANIMATION
+================================= */
+
+function update(){
+
+  if(ballMoving){
+
+    ballProgress += .012;
+
+
+    const w =
+    canvas.width;
+
+    const h =
+    canvas.height;
+
+
+    const startX =
+    w/2;
+
+    const startY =
+    h*.32;
+
+
+    const endX =
+    w/2;
+
+    const endY =
+    h*.69;
+
+
+    ballX =
+    startX;
+
+
+    ballY =
+    startY +
+    (endY-startY)
+    *ballProgress;
+
+
+    /* perspective */
+
+    ballSize =
+    5 +
+    12*ballProgress;
+
+
+    if(
+      ballProgress >= 1
+    ){
+
+      ballMoving = false;
+
+      balls++;
+
+      message.textContent =
+      "DOT BALL";
+
+      updateScore();
+
+      setTimeout(
+        nextBall,
+        700
+      );
+
+    }
+
+  }
+
+}
+
+
+/* =================================
+   START BUTTON
+================================= */
+
+start.onclick = function(){
+
+  runs = 0;
+
+  wickets = 0;
+
+  balls = 0;
+
+  playing = true;
+
+  updateScore();
+
+  start.style.display =
+  "none";
+
+  message.textContent =
+  "Bowler is preparing...";
+
+  setTimeout(
+    bowl,
+    1000
+  );
+
+};
+
+
+/* =================================
+   SHOT BUTTONS
+================================= */
+
+document
+.querySelectorAll(".shot")
+.forEach(
+  button => {
+
+    button.addEventListener(
+      "pointerdown",
+      function(){
+
+        playShot(
+          this.dataset.shot
+        );
+
+      }
+    );
+
+  }
+);
+
+
+/* =================================
+   MAIN LOOP
+================================= */
+
+function gameLoop(){
+
+  update();
+
+  draw();
+
+  requestAnimationFrame(
+    gameLoop
+  );
+
+}
+
+gameLoop();
+
+</script>
+
+</body>
+</html>
