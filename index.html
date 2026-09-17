@@ -4,35 +4,25 @@
 <meta charset="UTF-8">
 
 <meta name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+content="width=device-width,initial-scale=1.0,user-scalable=no">
 
 <title>Cricket Arena 3D</title>
 
 <style>
-
 *{
   box-sizing:border-box;
-  margin:0;
-  padding:0;
 }
 
 html,body{
+  margin:0;
   width:100%;
   height:100%;
   overflow:hidden;
+  background:#000;
   font-family:Arial,sans-serif;
-  background:#071b12;
-  touch-action:none;
-}
-
-#game{
-  position:fixed;
-  inset:0;
 }
 
 canvas{
-  width:100%;
-  height:100%;
   display:block;
 }
 
@@ -42,21 +32,18 @@ canvas{
   left:50%;
   transform:translateX(-50%);
   z-index:10;
-
-  width:90%;
-  max-width:360px;
-
+  width:92%;
+  max-width:420px;
   padding:12px;
-
   text-align:center;
   color:white;
-
   background:rgba(0,0,0,.65);
   border-radius:16px;
+  pointer-events:none;
 }
 
 #title{
-  font-size:22px;
+  font-size:21px;
   font-weight:bold;
 }
 
@@ -68,999 +55,99 @@ canvas{
 #message{
   margin-top:6px;
   color:#ffe066;
-  font-size:14px;
 }
 
 #start{
   position:fixed;
   z-index:20;
-
-  left:50%;
   top:50%;
-
+  left:50%;
   transform:translate(-50%,-50%);
-
-  padding:17px 30px;
-
+  padding:18px 30px;
   border:0;
-  border-radius:15px;
-
-  background:white;
-  color:#111;
-
+  border-radius:14px;
   font-size:18px;
   font-weight:bold;
-
-  box-shadow:0 8px 25px rgba(0,0,0,.4);
 }
 
 #controls{
   position:fixed;
-
   bottom:20px;
   left:0;
   right:0;
-
   z-index:15;
-
   display:flex;
   justify-content:center;
-
   gap:10px;
 }
 
 .shot{
   width:95px;
   height:55px;
-
   border:2px solid white;
   border-radius:14px;
-
-  background:rgba(0,0,0,.65);
+  background:rgba(0,0,0,.7);
   color:white;
-
   font-weight:bold;
 }
 
 .shot:active{
   transform:scale(.94);
 }
-
 </style>
 </head>
 
 <body>
 
-<div id="game">
-<canvas id="canvas"></canvas>
-</div>
-
 <div id="hud">
 
-<div id="title">
-CRICKET ARENA 3D
-</div>
+  <div id="title">
+    CRICKET ARENA 3D
+  </div>
 
-<div id="score">
-Runs: <span id="runs">0</span>
-&nbsp; | &nbsp;
-Wickets: <span id="wickets">0</span>
-&nbsp; | &nbsp;
-Balls: <span id="balls">0</span>
-</div>
+  <div id="score">
+    Runs: <span id="runs">0</span>
+    &nbsp; | &nbsp;
+    Wickets: <span id="wickets">0</span>
+    &nbsp; | &nbsp;
+    Balls: <span id="balls">0</span>
+  </div>
 
-<div id="message">
-Press START MATCH
-</div>
+  <div id="message">
+    Press START MATCH
+  </div>
 
 </div>
 
 <button id="start">
-START MATCH
+  START MATCH
 </button>
 
 <div id="controls">
 
-<button class="shot"
-data-shot="defend">
-DEFEND
-</button>
+  <button class="shot" data-shot="defend">
+    DEFEND
+  </button>
 
-<button class="shot"
-data-shot="drive">
-DRIVE
-</button>
+  <button class="shot" data-shot="drive">
+    DRIVE
+  </button>
 
-<button class="shot"
-data-shot="loft">
-LOFT
-</button>
+  <button class="shot" data-shot="loft">
+    LOFT
+  </button>
 
 </div>
 
-<script>
-
-/* =================================
-   CANVAS SETUP
-================================= */
-
-const canvas =
-document.getElementById("canvas");
-
-const ctx =
-canvas.getContext("2d");
-
-
-function resize(){
-
-  canvas.width =
-  window.innerWidth;
-
-  canvas.height =
-  window.innerHeight;
-
-}
-
-resize();
-
-window.addEventListener(
-"resize",
-resize
-);
-
-
-/* =================================
-   GAME DATA
-================================= */
-
-let runs = 0;
-
-let wickets = 0;
-
-let balls = 0;
-
-let playing = false;
-
-let ballMoving = false;
-
-let ballX = 0;
-
-let ballY = 0;
-
-let ballSize = 10;
-
-let ballProgress = 0;
-
-let shot = null;
-
-
-/* =================================
-   UI
-================================= */
-
-const runsText =
-document.getElementById("runs");
-
-const wicketsText =
-document.getElementById("wickets");
-
-const ballsText =
-document.getElementById("balls");
-
-const message =
-document.getElementById("message");
-
-const start =
-document.getElementById("start");
-
-
-function updateScore(){
-
-  runsText.textContent = runs;
-
-  wicketsText.textContent = wickets;
-
-  ballsText.textContent = balls;
-
-}
-
-
-/* =================================
-   DRAW SKY
-================================= */
-
-function drawSky(){
-
-  const gradient =
-  ctx.createLinearGradient(
-    0,
-    0,
-    0,
-    canvas.height
-  );
-
-  gradient.addColorStop(
-    0,
-    "#55b9ff"
-  );
-
-  gradient.addColorStop(
-    1,
-    "#d9f3ff"
-  );
-
-  ctx.fillStyle = gradient;
-
-  ctx.fillRect(
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
-
-}
-
-
-/* =================================
-   DRAW STADIUM
-================================= */
-
-function drawStadium(){
-
-  const w =
-  canvas.width;
-
-  const h =
-  canvas.height;
-
-
-  /* stadium */
-
-  ctx.fillStyle =
-  "#30343b";
-
-  ctx.beginPath();
-
-  ctx.ellipse(
-    w/2,
-    h*.65,
-    w*.62,
-    h*.32,
-    0,
-    0,
-    Math.PI*2
-  );
-
-  ctx.fill();
-
-
-  /* seats */
-
-  ctx.strokeStyle =
-  "#666b73";
-
-  ctx.lineWidth = 5;
-
-  ctx.beginPath();
-
-  ctx.ellipse(
-    w/2,
-    h*.65,
-    w*.55,
-    h*.27,
-    0,
-    0,
-    Math.PI*2
-  );
-
-  ctx.stroke();
-
-}
-
-
-/* =================================
-   DRAW FIELD
-================================= */
-
-function drawField(){
-
-  const w =
-  canvas.width;
-
-  const h =
-  canvas.height;
-
-
-  ctx.fillStyle =
-  "#1d7d39";
-
-  ctx.beginPath();
-
-  ctx.ellipse(
-    w/2,
-    h*.75,
-    w*.62,
-    h*.40,
-    0,
-    0,
-    Math.PI*2
-  );
-
-  ctx.fill();
-
-
-  /* inner field */
-
-  ctx.fillStyle =
-  "#289746";
-
-  ctx.beginPath();
-
-  ctx.ellipse(
-    w/2,
-    h*.74,
-    w*.48,
-    h*.29,
-    0,
-    0,
-    Math.PI*2
-  );
-
-  ctx.fill();
-
-}
-
-
-/* =================================
-   DRAW PITCH
-================================= */
-
-function drawPitch(){
-
-  const w =
-  canvas.width;
-
-  const h =
-  canvas.height;
-
-
-  const top =
-  h*.38;
-
-  const bottom =
-  h*.88;
-
-  const pitchWidth =
-  w*.20;
-
-
-  /* pitch */
-
-  ctx.fillStyle =
-  "#c9a66b";
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    w/2-pitchWidth/2,
-    top
-  );
-
-  ctx.lineTo(
-    w/2+pitchWidth/2,
-    top
-  );
-
-  ctx.lineTo(
-    w/2+pitchWidth,
-    bottom
-  );
-
-  ctx.lineTo(
-    w/2-pitchWidth,
-    bottom
-  );
-
-  ctx.closePath();
-
-  ctx.fill();
-
-
-  /* crease */
-
-  ctx.strokeStyle =
-  "white";
-
-  ctx.lineWidth = 3;
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    w*.38,
-    h*.82
-  );
-
-  ctx.lineTo(
-    w*.62,
-    h*.82
-  );
-
-  ctx.stroke();
-
-}
-
-
-/* =================================
-   PLAYER
-================================= */
-
-function drawPlayer(
-  x,
-  y,
-  scale,
-  shirt
-){
-
-  /* legs */
-
-  ctx.strokeStyle =
-  "#202020";
-
-  ctx.lineWidth =
-  9*scale;
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    x,
-    y+35*scale
-  );
-
-  ctx.lineTo(
-    x-12*scale,
-    y+75*scale
-  );
-
-  ctx.moveTo(
-    x,
-    y+35*scale
-  );
-
-  ctx.lineTo(
-    x+12*scale,
-    y+75*scale
-  );
-
-  ctx.stroke();
-
-
-  /* body */
-
-  ctx.fillStyle =
-  shirt;
-
-  ctx.beginPath();
-
-  ctx.arc(
-    x,
-    y,
-    27*scale,
-    0,
-    Math.PI*2
-  );
-
-  ctx.fill();
-
-
-  /* head */
-
-  ctx.fillStyle =
-  "#c98d68";
-
-  ctx.beginPath();
-
-  ctx.arc(
-    x,
-    y-43*scale,
-    18*scale,
-    0,
-    Math.PI*2
-  );
-
-  ctx.fill();
-
-
-  /* helmet */
-
-  ctx.strokeStyle =
-  "#222";
-
-  ctx.lineWidth =
-  5*scale;
-
-  ctx.beginPath();
-
-  ctx.arc(
-    x,
-    y-45*scale,
-    20*scale,
-    Math.PI,
-    Math.PI*2
-  );
-
-  ctx.stroke();
-
-}
-
-
-/* =================================
-   BATSMAN
-================================= */
-
-function drawBatsman(){
-
-  const x =
-  canvas.width/2;
-
-  const y =
-  canvas.height*.70;
-
-  drawPlayer(
-    x,
-    y,
-    1.25,
-    "#2563eb"
-  );
-
-
-  /* bat */
-
-  ctx.strokeStyle =
-  "#d6a64f";
-
-  ctx.lineWidth = 12;
-
-  ctx.beginPath();
-
-  if(shot){
-
-    ctx.moveTo(
-      x+25,
-      y+10
-    );
-
-    ctx.lineTo(
-      x+65,
-      y-55
-    );
-
-  }else{
-
-    ctx.moveTo(
-      x+25,
-      y+15
-    );
-
-    ctx.lineTo(
-      x+45,
-      y-50
-    );
-
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
   }
-
-  ctx.stroke();
-
 }
-
-
-/* =================================
-   BOWLER
-================================= */
-
-function drawBowler(){
-
-  const x =
-  canvas.width/2;
-
-  const y =
-  canvas.height*.32;
-
-  drawPlayer(
-    x,
-    y,
-    .8,
-    "#dc2626"
-  );
-
-}
-
-
-/* =================================
-   BALL
-================================= */
-
-function drawBall(){
-
-  if(!ballMoving)
-    return;
-
-
-  ctx.fillStyle =
-  "#b91c1c";
-
-  ctx.beginPath();
-
-  ctx.arc(
-    ballX,
-    ballY,
-    ballSize,
-    0,
-    Math.PI*2
-  );
-
-  ctx.fill();
-
-
-  /* white seam */
-
-  ctx.strokeStyle =
-  "white";
-
-  ctx.lineWidth = 2;
-
-  ctx.beginPath();
-
-  ctx.arc(
-    ballX,
-    ballY,
-    ballSize*.7,
-    0,
-    Math.PI*2
-  );
-
-  ctx.stroke();
-
-}
-
-
-/* =================================
-   DRAW EVERYTHING
-================================= */
-
-function draw(){
-
-  drawSky();
-
-  drawStadium();
-
-  drawField();
-
-  drawPitch();
-
-  drawBowler();
-
-  drawBatsman();
-
-  drawBall();
-
-}
-
-
-/* =================================
-   BOWL
-================================= */
-
-function bowl(){
-
-  if(!playing)
-    return;
-
-  ballMoving = true;
-
-  ballProgress = 0;
-
-  shot = null;
-
-  message.textContent =
-  "Ball coming! Choose a shot.";
-
-}
-
-
-/* =================================
-   SHOT
-================================= */
-
-function playShot(type){
-
-  if(!playing)
-    return;
-
-  if(!ballMoving)
-    return;
-
-  if(
-    ballProgress < .65
-  ){
-
-    message.textContent =
-    "Wait for the ball...";
-
-    return;
-
-  }
-
-
-  shot = type;
-
-  ballMoving = false;
-
-  balls++;
-
-
-  let result = 0;
-
-
-  if(type === "defend"){
-
-    result = 0;
-
-    message.textContent =
-    "DEFENDED!";
-
-  }
-
-
-  if(type === "drive"){
-
-    if(Math.random() < .65){
-
-      result = 4;
-
-      message.textContent =
-      "FOUR!";
-
-    }else{
-
-      result = 2;
-
-      message.textContent =
-      "GOOD DRIVE!";
-
-    }
-
-  }
-
-
-  if(type === "loft"){
-
-    if(Math.random() < .25){
-
-      wickets++;
-
-      message.textContent =
-      "OUT!";
-
-    }else{
-
-      if(Math.random() < .5){
-
-        result = 6;
-
-        message.textContent =
-        "SIX!";
-
-      }else{
-
-        result = 4;
-
-        message.textContent =
-        "FOUR!";
-
-      }
-
-    }
-
-  }
-
-
-  runs += result;
-
-  updateScore();
-
-
-  setTimeout(
-    nextBall,
-    1200
-  );
-
-}
-
-
-/* =================================
-   NEXT BALL
-================================= */
-
-function nextBall(){
-
-  if(
-    wickets >= 3 ||
-    balls >= 12
-  ){
-
-    playing = false;
-
-    message.textContent =
-    "INNINGS COMPLETE!";
-
-    start.style.display =
-    "block";
-
-    start.textContent =
-    "PLAY AGAIN";
-
-    return;
-
-  }
-
-
-  shot = null;
-
-  setTimeout(
-    bowl,
-    700
-  );
-
-}
-
-
-/* =================================
-   ANIMATION
-================================= */
-
-function update(){
-
-  if(ballMoving){
-
-    ballProgress += .012;
-
-
-    const w =
-    canvas.width;
-
-    const h =
-    canvas.height;
-
-
-    const startX =
-    w/2;
-
-    const startY =
-    h*.32;
-
-
-    const endX =
-    w/2;
-
-    const endY =
-    h*.69;
-
-
-    ballX =
-    startX;
-
-
-    ballY =
-    startY +
-    (endY-startY)
-    *ballProgress;
-
-
-    /* perspective */
-
-    ballSize =
-    5 +
-    12*ballProgress;
-
-
-    if(
-      ballProgress >= 1
-    ){
-
-      ballMoving = false;
-
-      balls++;
-
-      message.textContent =
-      "DOT BALL";
-
-      updateScore();
-
-      setTimeout(
-        nextBall,
-        700
-      );
-
-    }
-
-  }
-
-}
-
-
-/* =================================
-   START BUTTON
-================================= */
-
-start.onclick = function(){
-
-  runs = 0;
-
-  wickets = 0;
-
-  balls = 0;
-
-  playing = true;
-
-  updateScore();
-
-  start.style.display =
-  "none";
-
-  message.textContent =
-  "Bowler is preparing...";
-
-  setTimeout(
-    bowl,
-    1000
-  );
-
-};
-
-
-/* =================================
-   SHOT BUTTONS
-================================= */
-
-document
-.querySelectorAll(".shot")
-.forEach(
-  button => {
-
-    button.addEventListener(
-      "pointerdown",
-      function(){
-
-        playShot(
-          this.dataset.shot
-        );
-
-      }
-    );
-
-  }
-);
-
-
-/* =================================
-   MAIN LOOP
-================================= */
-
-function gameLoop(){
-
-  update();
-
-  draw();
-
-  requestAnimationFrame(
-    gameLoop
-  );
-
-}
-
-gameLoop();
-
 </script>
+
+<script type="module" src="./game.js"></script>
 
 </body>
 </html>
