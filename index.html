@@ -4,13 +4,17 @@
 <meta charset="UTF-8">
 
 <meta name="viewport"
-content="width=device-width,initial-scale=1.0,user-scalable=no">
+      content="width=device-width,
+      initial-scale=1.0,
+      maximum-scale=1.0,
+      user-scalable=no">
 
 <title>Cricket Arena 3D</title>
 
 <style>
 *{
   box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
 }
 
 html,body{
@@ -18,12 +22,14 @@ html,body{
   width:100%;
   height:100%;
   overflow:hidden;
-  background:#000;
+  background:#07120a;
   font-family:Arial,sans-serif;
 }
 
 canvas{
   display:block;
+  width:100%;
+  height:100%;
 }
 
 #hud{
@@ -31,73 +37,117 @@ canvas{
   top:12px;
   left:50%;
   transform:translateX(-50%);
-  z-index:10;
   width:92%;
-  max-width:420px;
-  padding:12px;
-  text-align:center;
+  max-width:430px;
+  z-index:10;
+
+  padding:12px 16px;
+  border-radius:18px;
+
   color:white;
+  text-align:center;
+
   background:rgba(0,0,0,.65);
-  border-radius:16px;
-  pointer-events:none;
+  border:1px solid rgba(255,255,255,.18);
+
+  backdrop-filter:blur(8px);
 }
 
 #title{
-  font-size:21px;
-  font-weight:bold;
+  font-size:22px;
+  font-weight:900;
+  letter-spacing:1px;
 }
 
 #score{
-  margin-top:6px;
+  margin-top:7px;
   font-size:15px;
 }
 
 #message{
-  margin-top:6px;
-  color:#ffe066;
+  margin-top:7px;
+  color:#ffe66d;
+  font-weight:bold;
 }
 
 #start{
   position:fixed;
   z-index:20;
+
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-  padding:18px 30px;
-  border:0;
-  border-radius:14px;
+
+  padding:17px 32px;
+
+  border:2px solid white;
+  border-radius:16px;
+
+  background:#111;
+  color:white;
+
   font-size:18px;
   font-weight:bold;
+
+  box-shadow:0 8px 30px rgba(0,0,0,.5);
 }
 
 #controls{
   position:fixed;
+  z-index:15;
+
   bottom:20px;
   left:0;
   right:0;
-  z-index:15;
+
   display:flex;
   justify-content:center;
-  gap:10px;
+  gap:9px;
+
+  padding:0 10px;
 }
 
 .shot{
-  width:95px;
-  height:55px;
+  width:100px;
+  height:56px;
+
   border:2px solid white;
-  border-radius:14px;
-  background:rgba(0,0,0,.7);
+  border-radius:15px;
+
+  background:rgba(0,0,0,.75);
   color:white;
-  font-weight:bold;
+
+  font-weight:900;
+  font-size:13px;
 }
 
 .shot:active{
   transform:scale(.94);
 }
+
+#loading{
+  position:fixed;
+  z-index:30;
+  inset:0;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  color:white;
+  background:#07120a;
+
+  font-size:20px;
+  font-weight:bold;
+}
 </style>
 </head>
 
 <body>
+
+<div id="loading">
+  Loading Cricket Arena 3D...
+</div>
 
 <div id="hud">
 
@@ -139,15 +189,11 @@ canvas{
 
 </div>
 
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
-  }
-}
-</script>
+<!-- Three.js -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
 
-<script type="module" src="./game.js"></script>
+<!-- Our game -->
+<script src="./game.js"></script>
 
 </body>
 </html>
